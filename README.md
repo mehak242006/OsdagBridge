@@ -54,6 +54,14 @@ Included under `core/utils/codes/`:
 
 These modules provide load models, combinations, material factors, and code checks.
 
+### Plate Girder Design Reports
+
+- Multi-page tables repeat their column headings, and the page layout reserves space for the footer.
+- Chapter 3 reports the selected vehicles and footway loading in separate tables. Values that OsdagBridge cannot compute are marked as unavailable.
+- Section 5.5 includes utilization-ratio charts with the 1.0 limit. Chapter 7 charts the reported steel, concrete and reinforcement quantities using their respective units.
+- The executive summary reflects the design results, and the end-diaphragm checks use the end-diaphragm results. End-diaphragm material quantities are currently unavailable.
+- Shared Python and LaTeX formatting settings are maintained in `src/osdagbridge/core/reports/styles.py`.
+
 ---
 
 ## Project Structure
