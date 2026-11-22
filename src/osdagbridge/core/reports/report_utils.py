@@ -151,19 +151,20 @@ def count_columns(colspec):
 _CM_WIDTH = re.compile(r"([LCRpmb])\{([0-9]*\.?[0-9]+)cm\}")
 
 
-def fit_colspec(colspec, available_cm=None):
+def fit_colspec(colspec, available_cm=None, tabcolsep=None):
     """Scale the absolute ``cm`` column widths of ``colspec`` so that the table
     (columns + 2 x ``\\tabcolsep`` per column + vertical rules) fits within the
     text width from ``styles.PAGE_GEOMETRY`` (R2: tables stay inside the
     printable area). Proportions are kept; a spec that already fits is
-    returned unchanged. The default ``\\tabcolsep`` is assumed, which is the
-    widest padding used, so locally tighter tables end up fitting as well.
+    returned unchanged. By default the global ``\\tabcolsep`` is assumed (the
+    widest padding used); pass ``tabcolsep`` (e.g. ``"4pt"``) for a table that
+    is typeset with tighter padding.
     """
     widths = [float(m.group(2)) for m in _CM_WIDTH.finditer(colspec)]
     if not widths:
         return colspec
     ncols = count_columns(colspec)
-    padding = (ncols * 2 * S._to_cm(S.TABLE["tabcolsep"])
+    padding = (ncols * 2 * S._to_cm(tabcolsep or S.TABLE["tabcolsep"])
                + (ncols + 1) * S._to_cm(S.TABLE["rule_width"]))
     available = (available_cm if available_cm is not None else S.text_width_cm()) - padding
     total = sum(widths)
