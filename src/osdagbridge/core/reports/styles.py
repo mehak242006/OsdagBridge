@@ -169,6 +169,9 @@ LENGTHS = {
     "osdagFigureSkip":    "0.5em",  # trim above/below embedded figures
     "osdagTocSkip":       "2pt",    # gap before each chapter line in the TOC
     "osdagCaptionGap":    "2pt",    # \abovecaptionskip / \belowcaptionskip
+    # space reserved for a table caption on top of the measured head + first
+    # row when deciding whether a longtable may start on the current page
+    "osdagCaptionAllowance": "3\\baselineskip",
 }
 
 # Font-role macros (emitted as \newcommand{\<name>}{<size>}).
@@ -262,6 +265,7 @@ def latex_style_definitions() -> str:
     t = TABLE
     lines.append(rf"\newcommand{{\osdagDenseArrayStretch}}{{{t['arraystretch_dense']}}}")
     lines.append(rf"\setlength{{\emergencystretch}}{{{EMERGENCY_STRETCH}}}")
+    lines.append(r"\newsavebox{\osdagProbeBox}")   # used by keep_table_starts_together()
     lines += [
         rf"\setlength{{\tabcolsep}}{{{t['tabcolsep']}}}",
         rf"\renewcommand{{\arraystretch}}{{{t['arraystretch']}}}",
@@ -271,7 +275,10 @@ def latex_style_definitions() -> str:
         rf"\setlength{{\arrayrulewidth}}{{{t['rule_width']}}}",
         rf"\setlength{{\extrarowheight}}{{{t['extra_row_height']}}}",
         rf"\BeforeBeginEnvironment{{table}}{{\needspace{{{t['needspace_lines']}\baselineskip}}}}",
-        rf"\BeforeBeginEnvironment{{longtable}}{{\needspace{{{t['needspace_lines']}\baselineskip}}}}",
+        # No soft \needspace before longtables: its cheap (-100) breakpoint is
+        # chosen only after longtable has installed its output routine, which
+        # then prints an orphan foot and a doubled head. Longtables get an
+        # exact, hard check from report_utils.keep_table_starts_together().
     ]
     return "\n".join(lines) + "\n"
 

@@ -118,7 +118,9 @@ from osdagbridge.core.utils.common import (
     KEY_TL_TEMP_RISE
 )
 
-from osdagbridge.core.reports.report_utils import _tex, keep_row_groups_together
+from osdagbridge.core.reports.report_utils import (
+    _tex, keep_row_groups_together, keep_table_starts_together,
+)
 from osdagbridge.core.reports import styles as S
 from .executive_summary import executive_summary
 from .chap1 import ch1_project_info
@@ -906,9 +908,14 @@ def generate_report(payload, request):
 
             # NOTE: longtable header repetition is handled per-table by
             # report_utils.longtable_begin() (\endfirsthead / \endhead).
-            # The only document-wide pass keeps each \multirow row group on
-            # one page so its label cannot be drawn into the footer (R2).
+            # Two document-wide layout passes (R2):
+            #  1. keep each \multirow row group on one page, so its label
+            #     cannot be drawn into the footer;
+            #  2. start each longtable only where its head and first row unit
+            #     (measured, including a bound group from pass 1) fit, so no
+            #     orphan "continued" foot / doubled head appears.
             full_tex = keep_row_groups_together(full_tex)
+            full_tex = keep_table_starts_together(full_tex)
 
             tmp_tex = os.path.join(tmp_dir, request.file_stem + '.tex')
             tmp_pdf = os.path.join(tmp_dir, request.file_stem + '.pdf')

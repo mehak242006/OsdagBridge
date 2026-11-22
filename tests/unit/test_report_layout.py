@@ -141,3 +141,48 @@ def test_compiled_groups_never_split_or_enter_footer(tmp_path, filler_lines):
         stray = [ln for ln in band.splitlines()
                  if ln.strip() and "Osdag | FOSSEE" not in ln and "Page " not in ln]
         assert not stray, f"text in footer band on page {i}: {stray}"
+
+
+# ── table starts: measured hard check, no soft needspace before longtables ─
+
+from osdagbridge.core.reports.report_utils import keep_table_starts_together  # noqa: E402
+
+_TABLE = (longtable_begin(r"|C{2.5cm}|L{6cm}|C{3cm}|",
+                          r"\textbf{Girder} & \textbf{Parameter} & \textbf{Value} \\",
+                          caption=r"\textbf{Probe test}")
+          + "\n" + keep_row_groups_together(
+              r"\multirow{2}{*}{\makecell{G1}} & a & 1 \\[\osdagRowPad]" "\n"
+              r"\cline{2-3}" "\n"
+              r" & b & 2 \\[\osdagRowPad]" "\n"
+              r"\hline" "\n"
+              r"G2 & c & 3 \\[\osdagRowPad]" "\n"
+              r"\hline") + "\n" + r"\end{longtable}" + "\n")
+
+
+def test_no_soft_needspace_hook_before_longtables():
+    # its cheap breakpoint was taken after longtable's output routine was
+    # active, printing an orphan foot and a doubled head (9 tables affected)
+    assert r"\BeforeBeginEnvironment{longtable}" not in S.latex_style_definitions()
+
+
+def test_every_longtable_gets_a_hard_measured_probe():
+    out = keep_table_starts_together(_TABLE + _TABLE)
+    assert out.count(r"\setbox\osdagProbeBox\hbox{") == 2
+    assert out.count(r"\Needspace*{\dimexpr\ht\osdagProbeBox+\dp\osdagProbeBox") == 2
+    assert out.count(r"\begin{longtable}") == 2          # tables themselves unchanged
+    assert out.index(r"\Needspace*") < out.index(r"\begin{longtable}")
+
+
+def test_probe_measures_head_and_whole_first_group_without_caption():
+    out = keep_table_starts_together(_TABLE)
+    probe = out[:out.index(r"\Needspace*")]
+    assert r"\caption" not in probe
+    assert r"\textbf{Girder}" in probe                    # the head
+    assert "& a & 1" in probe and "& b & 2" in probe      # whole bound G1 group
+    assert "G2 & c" not in probe                          # stops at the first breakable row
+    assert r"\let\markSD\relax" in probe                  # no software-default side effect
+
+
+def test_tables_without_first_head_are_left_alone():
+    plain = "\n".join([r"\begin{longtable}{|l|}", r"x \\", r"\hline", r"\end{longtable}", ""])
+    assert keep_table_starts_together(plain) == plain

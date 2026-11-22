@@ -221,6 +221,74 @@ def keep_row_groups_together(tex):
     return "".join(out)
 
 
+def _braced(tex, open_at):
+    """(content, index after the closing brace) of the group starting at tex[open_at] == '{'."""
+    depth = 0
+    for i in range(open_at, len(tex)):
+        if tex[i] == "{" and (i == 0 or tex[i - 1] != "\\"):
+            depth += 1
+        elif tex[i] == "}" and tex[i - 1] != "\\":
+            depth -= 1
+            if depth == 0:
+                return tex[open_at + 1:i], i + 1
+    raise ValueError("unbalanced braces")
+
+
+_LT_BEGIN = re.compile(r"\\begin\{longtable\}(?=\{)")
+_BODY_MARKERS = (r"\endlastfoot", r"\endfoot", r"\endhead")
+
+
+def keep_table_starts_together(tex):
+    """Start each longtable only where its head and first row unit fit (R2).
+
+    longtable decides whether to start on the current page by measuring the
+    head plus one strut-high line of the first row. When the first unbreakable
+    unit (a tall row, or a ``\\multirow`` group bound by ``\\\\*``) is taller,
+    TeX breaks *inside* the started table, before its first row: the old page
+    gets an orphan "Continued on next page" foot and the new page shows the
+    repeated head above the first head.
+
+    For every longtable with an ``\\endfirsthead`` this inserts, just before
+    ``\\begin{longtable}``, a probe that typesets the table's own first head
+    and first row unit in a ``tabular`` with the same column spec (inside an
+    unused box), followed by the *hard* ``\\Needspace*`` of that measured
+    height plus a caption allowance: if it does not fit, the page is broken
+    immediately, before longtable starts. (The soft ``\\needspace`` is not
+    used: its cheap breakpoint is taken only once longtable's output routine
+    is active, which is what produced the doubled head.) Nothing of the probe
+    is printed.
+    """
+    out, last = [], 0
+    for m in _LT_BEGIN.finditer(tex):
+        spec, after_spec = _braced(tex, m.end())
+        end = tex.find(r"\end{longtable}", after_spec)
+        if end < 0:
+            continue
+        block = tex[after_spec:end]
+        if r"\endfirsthead" not in block:
+            continue
+        head = "\n".join(line for line in block.split(r"\endfirsthead")[0].split("\n")
+                         if not line.lstrip().startswith(r"\caption"))
+        body_at = max(block.rfind(mk) + len(mk) for mk in _BODY_MARKERS if mk in block)
+        body = block[body_at:]
+        first_end = next((e for e in _ROW_END.finditer(body) if not e.group(1)), None)
+        if first_end is None:
+            continue
+        rule_line_end = body.find("\n", first_end.end() + 1)
+        first_unit = body[:rule_line_end if rule_line_end > 0 else len(body)]
+        # \hbox (not \vbox): no paragraph/indent, so the probe itself never overflows
+        probe = ("\\setbox\\osdagProbeBox\\hbox{\\let\\markSD\\relax"
+                 "\\begin{tabular}{" + spec + "}" + head + "\n" + first_unit
+                 + "\n\\end{tabular}}%\n"
+                 "\\Needspace*{\\dimexpr\\ht\\osdagProbeBox+\\dp\\osdagProbeBox"
+                 "+\\osdagCaptionAllowance\\relax}%\n")
+        out.append(tex[last:m.start()])
+        out.append(probe)
+        last = m.start()
+    out.append(tex[last:])
+    return "".join(out)
+
+
 def longtable_begin(colspec, header, caption=None, label=None, shade=True):
     """Opening of a ``longtable`` whose column header repeats on every page.
 
