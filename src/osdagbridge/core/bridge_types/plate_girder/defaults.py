@@ -937,3 +937,22 @@ def solve_extend_basic_input_dict(basic_input_dict: dict) -> None:
     # Update Dynamic per-girder/member keys
     _on_no_of_girders_changed(basic_input_dict)
 
+
+def with_missing_defaults(input_dict: dict) -> dict:
+    """Return a copy of ``input_dict`` with default values added only for
+    keys that are absent.
+
+    ``solve_extend_basic_input_dict`` overwrites Additional-Input values (e.g.
+    every live-load vehicle flag is reset to ``True``) and re-solves the
+    layout, so it must not be applied to a dict that already carries the
+    user's choices when saving. This helper runs it on a deep copy and lets
+    every value already present in ``input_dict`` win. ``input_dict`` itself
+    is never modified.
+    """
+    import copy
+
+    filled = copy.deepcopy(input_dict)
+    solve_extend_basic_input_dict(filled)
+    filled.update(copy.deepcopy(input_dict))
+    return filled
+

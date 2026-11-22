@@ -17,7 +17,9 @@ from osdagbridge.desktop.ui.dialogs.loading_popup import LoadingDialogManager
 from osdagbridge.desktop.ui.cad_3d import CAD3DWindow
 
 from osdagbridge.core.bridge_types.plate_girder.ui_fields import FrontendData
-from osdagbridge.core.bridge_types.plate_girder.defaults import BASIC_INPUT_DICT, solve_extend_basic_input_dict
+from osdagbridge.core.bridge_types.plate_girder.defaults import (
+    BASIC_INPUT_DICT, solve_extend_basic_input_dict, with_missing_defaults,
+)
 from osdagbridge.core.utils.common import *
 from osdagbridge.core.utils.osi_validator import validate_osi_inputs
 from osdagbridge.core.utils.logger import bridge_logger
@@ -792,9 +794,12 @@ class CustomWindow(QWidget):
     # Function for saving input dictionary into an OSI file
     def saveOSI_inputs(self):
         # Populate additional input defaults so they appear in the saved file
-        # even if the user never opened the Additional Inputs dialog.
+        # even if the user never opened the Additional Inputs dialog. Defaults
+        # are only added for missing keys; values the user already set (e.g.
+        # deselected vehicles) are kept, and self.input_dict is not modified.
+        data_to_save = self.input_dict
         try:
-            solve_extend_basic_input_dict(self.input_dict)
+            data_to_save = with_missing_defaults(self.input_dict)
         except Exception:
             pass
 
@@ -809,7 +814,7 @@ class CustomWindow(QWidget):
 
         try:
             with open(filePath, 'w') as input_file:
-                yaml.dump(self.input_dict, input_file)
+                yaml.dump(data_to_save, input_file)
 
             CustomMessageBox(
                 title="Success",
