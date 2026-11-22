@@ -1049,16 +1049,39 @@ class BridgeGrillageModel:
     @staticmethod
     def _vehicle_total_weight_kN(vehicle_type: str) -> float:
         """
-        Return total unfactored axle load (kN) for one vehicle.
+        Return total unfactored load (kN) for one vehicle, from the existing
+        IRC6_2017 vehicle definitions (no load values are introduced here).
 
-        The IRC6_2017 vehicle geometries define ``wheel_loads`` with the ``t``
-        unit constant (tonne → N), so the sum is in N and converted to kN here.
+        ``vehicle_type`` and how the total is obtained:
+
+        * ``'ClassA'``, ``'Class70R'``, ``'Fatigue'`` — sum of the axle loads
+          in ``wheel_loads``; these use the ``t`` unit constant (tonne → N),
+          so the sum is in N and converted to kN.
+          (55.4 t, 100 t and 40 t: IRC 6 Cl. 204.1 / 204.6.)
+        * ``'Class70R_Tracked'`` — ``wheel_loads_udl`` (N/m per track) × track
+          contact length (span of ``x``) × number of tracks (``len(z)``)
+          = 7.66 t/m × 4.57 m × 2 ≈ 70 t (IRC 6 Cl. 204.1).
+        * ``'ClassSV'`` — the definition's explicit ``total_load_kN`` (385 t,
+          IRC 6 Cl. 204.5). Its ``wheel_loads`` are tonne × 9.81, i.e. kN
+          numbers rather than N, so summing them like the others would be
+          1000× too small; they are therefore not summed.
+
+        Returns 0.0 for vehicle types without a definition (e.g. Class AA,
+        Class 70R bogie, custom vehicles) or if a definition cannot be read.
         """
         try:
             if vehicle_type == 'ClassA':
                 return float(sum(IRC6_2017.cl_204_1_ClassA_vehicle()['wheel_loads'])) / kN
             elif vehicle_type == 'Class70R':
                 return float(sum(IRC6_2017.cl_204_1_Class70R_vehicle_wheel()['wheel_loads'])) / kN
+            elif vehicle_type == 'Fatigue':
+                return float(sum(IRC6_2017.cl_204_6_fatigue_load()['wheel_loads'])) / kN
+            elif vehicle_type == 'Class70R_Tracked':
+                track = IRC6_2017.cl_204_1_Class70R_vehicle_track()
+                length = max(track['x']) - min(track['x'])
+                return float(track['wheel_loads_udl'] * length * len(track['z'])) / kN
+            elif vehicle_type == 'ClassSV':
+                return float(IRC6_2017.cl_204_5_1_special_vehicle()['total_load_kN'])
         except Exception:
             pass
         return 0.0
