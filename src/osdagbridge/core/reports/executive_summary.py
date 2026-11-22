@@ -128,6 +128,23 @@ def executive_summary(input_dict, output_dict, fig_paths) -> str:
     else:
         overall_utilization_ratio = ""
 
+    # Key Design Outcomes: one line per component from the results above
+    # (previously four static "design pass" lines, whatever the results).
+    def _outcome(label, max_ur, failed=None, missing="no design results"):
+        if max_ur is None:
+            return f"{label}: {missing}"
+        is_fail = failed if failed is not None else max_ur > 1.0
+        return f"{label}: {'FAIL' if is_fail else 'PASS'} (max. UR {max_ur:.2f})"
+
+    key_outcomes = [
+        _outcome("Girder design", girder_max_ur, failed=bool(failing)),
+        _outcome("Cross bracing design", _max_member_efficiency(cb_results)),
+        _outcome("End diaphragm design", _max_member_efficiency(ed_results),
+                 missing="no member design performed (see Section 5.4)"),
+        _outcome("Deck design", deck_max),
+    ]
+    key_outcomes_tex = " \\\\\n".join(_tex(line) for line in key_outcomes)
+
     gov = _tex(gov_name) if gov_name not in (None, '', 'None') else ''
     ur = _tex(overall_utilization_ratio) if overall_utilization_ratio else ''
 
@@ -237,10 +254,7 @@ This section provides a concise summary of the bridge design, key inputs, govern
 \addcontentsline{toc}{section}{Key Design Outcomes Summary}
 \label{sec:key-outcomes}
 
-\noindent Girder design pass \\
-Cross bracing design pass \\
-End Diaphragm design pass \\
-Deck design pass
+\noindent """ + key_outcomes_tex + r"""
 
 \section*{Design Assumptions and Limitations}
 \addcontentsline{toc}{section}{Design Assumptions and Limitations}
