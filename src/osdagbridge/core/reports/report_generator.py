@@ -119,6 +119,7 @@ from osdagbridge.core.utils.common import (
 )
 
 from osdagbridge.core.reports.report_utils import _tex
+from osdagbridge.core.reports import styles as S
 from .executive_summary import executive_summary
 from .chap1 import ch1_project_info
 from .chap2 import ch2_input_parameters
@@ -153,10 +154,10 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
     rd = _tex(report_date)
     rv = _tex(report_version)
     return r"""
-\documentclass[12pt,a4paper]{report}
+\documentclass[""" + S.BASE_FONT_SIZE + "," + S.PAPER + r"""]{""" + S.DOCUMENT_CLASS + r"""}
 
 % Packages
-\usepackage[a4paper, margin=1in]{geometry}
+\usepackage[""" + S.geometry_options() + r"""]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -192,67 +193,36 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
 
 \numberwithin{table}{chapter}
 \numberwithin{figure}{chapter}
-% Table layout and spacing: consistent padding, row height, and longtable pre/post skips
-\setlength{\tabcolsep}{6pt}
-\renewcommand{\arraystretch}{1.12}
-\setlength{\LTpre}{0pt}
-\setlength{\LTpost}{6pt}
-% Table rules (outline thickness) and small extra row height for clarity
-\setlength{\arrayrulewidth}{0.5pt}
-\setlength{\extrarowheight}{0.6pt}
-
-% Prevent tables from overflowing past the page bottom:
-% if fewer than 5 baseline-skips remain, break to the next page first.
-\BeforeBeginEnvironment{table}{\needspace{5\baselineskip}}
-\BeforeBeginEnvironment{longtable}{\needspace{5\baselineskip}}
-
-\definecolor{osdagGreen}{HTML}{91B014}
+% Colours, named lengths and global table settings: generated from styles.py
+""" + S.latex_style_definitions() + r"""
 
 \fancypagestyle{main}{
   \fancyhf{}
   \fancyhead[L]{""" + pn + r""" $|$ """ + jn + r"""}
   \fancyhead[R]{""" + rd + r""" $|$ """ + rv + r"""}
-  \fancyfoot[L]{Osdag $|$ FOSSEE $|$ Indian Institute of Technology Bombay}
+  \fancyfoot[L]{""" + S.HEADER_FOOTER["footer_left"] + r"""}
   \fancyfoot[R]{Page \thepage\ of \pageref{LastPage}}
-  \renewcommand{\headrule}{\color{osdagGreen}\hrule width\headwidth height 1pt \vspace{2pt}}
-  \renewcommand{\footrule}{%
-    \ifbool{hasSDonPage}{%
-      \vspace{-20pt}%
-      \hbox to \headwidth{\textcolor{black}{\footnotesize\textit{* Software default value}}\hfil}%
-      \vspace{4pt}%
-    }{%
-      \vspace{-8pt}%
-    }%
-    \color{osdagGreen}\hrule width\headwidth height 1pt \vspace{6pt}%
-  }
+  """ + S.headrule_definition() + r"""
+  """ + S.footrule_definition() + r"""
 }
 \fancypagestyle{plain}{
   \fancyhf{}
   \fancyhead[L]{""" + pn + r""" $|$ """ + jn + r"""}
   \fancyhead[R]{""" + rd + r""" $|$ """ + rv + r"""}
-  \fancyfoot[L]{Osdag $|$ FOSSEE $|$ Indian Institute of Technology Bombay}
+  \fancyfoot[L]{""" + S.HEADER_FOOTER["footer_left"] + r"""}
   \fancyfoot[R]{Page \thepage\ of \pageref{LastPage}}
-  \renewcommand{\headrule}{\color{osdagGreen}\hrule width\headwidth height 1pt \vspace{2pt}}
-  \renewcommand{\footrule}{%
-    \ifbool{hasSDonPage}{%
-      \vspace{-20pt}%
-      \hbox to \headwidth{\textcolor{black}{\footnotesize\textit{* Software default value}}\hfil}%
-      \vspace{4pt}%
-    }{%
-      \vspace{-8pt}%
-    }%
-    \color{osdagGreen}\hrule width\headwidth height 1pt \vspace{6pt}%
-  }
+  """ + S.headrule_definition() + r"""
+  """ + S.footrule_definition() + r"""
 }
 \fancypagestyle{firstpage}{
   \fancyhf{}
   \renewcommand{\headrulewidth}{0pt}
-  \fancyfoot[L]{Osdag $|$ FOSSEE $|$ Indian Institute of Technology Bombay}
+  \fancyfoot[L]{""" + S.HEADER_FOOTER["footer_left"] + r"""}
   \fancyfoot[R]{Page \thepage\ of \pageref{LastPage}}
-  \renewcommand{\footrule}{\vspace{-8pt}\color{osdagGreen}\hrule width\headwidth height 1pt \vspace{6pt}}
+  """ + S.footrule_definition(with_sd_note_support=False) + r"""
 }
 \pagestyle{main}
-\setstretch{1.15}
+\setstretch{""" + str(S.LINE_STRETCH) + r"""}
 
 % Custom Commands
 \newcommand{\placeholder}[1]{\textit{\textless #1\textgreater}}
@@ -269,9 +239,6 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
 \renewcommand{\sdstar}{\textsuperscript{*}\markSD{}}
 \AddToHook{shipout/before}{\global\boolfalse{hasSDonPage}}
 
-\title{\Large\textbf{OsdagBridge} \\ \normalsize Open Source Software for Steel Girder Bridge Design \\ \vspace{2cm} \large Design Report}
-\author{}
-\date{}
 
 \begin{document}
 """
@@ -288,7 +255,7 @@ def title_page(m, osdag_logo, org_logo):
         lhs = r'\textit{(Osdag Logo)}'
 
     if org_logo:
-        rhs = r'\includegraphics[width=\linewidth,height=2.2cm,keepaspectratio]{' + org_logo.replace('\\', '/') + r'}'
+        rhs = r'\includegraphics[width=\linewidth,height=' + S.TITLE_PAGE['logo_height'] + r',keepaspectratio]{' + org_logo.replace('\\', '/') + r'}'
     else:
         rhs = r''
 
@@ -302,19 +269,19 @@ def title_page(m, osdag_logo, org_logo):
 \raggedleft
 """ + rhs + r"""
 \end{minipage}
-\\[1cm]
+\\[""" + S.TITLE_PAGE["logo_gap"] + r"""]
 """
 
     return r"""
 \begin{titlepage}
 \thispagestyle{firstpage}
 \centering
-\vspace*{1.5cm}
+\vspace*{""" + S.TITLE_PAGE["top_skip"] + r"""}
 """ + logos_tex + r"""
-{\Huge \textbf{OsdagBridge}}\\[0.3cm]
-{\large Open Source Software for Steel Girder Bridge Design}\\[1.5cm]
-{\Large Design Report}\\[1.5cm]
-\begin{tabular}{|L{4cm}|L{10cm}|}
+{""" + S.FONT_SIZES["title_main"] + r""" \textbf{OsdagBridge}}\\[""" + S.TITLE_PAGE["tagline_gap"] + r"""]
+{""" + S.FONT_SIZES["title_subtitle"] + r""" Open Source Software for Steel Girder Bridge Design}\\[""" + S.TITLE_PAGE["block_gap"] + r"""]
+{""" + S.FONT_SIZES["title_report"] + r""" Design Report}\\[""" + S.TITLE_PAGE["block_gap"] + r"""]
+\begin{tabular}{""" + S.TITLE_PAGE["meta_colspec"] + r"""}
 \hline
 \textbf{Project Name} & """ + _tex(m.project_name) + r""" \\
 \hline
@@ -345,33 +312,15 @@ def title_page(m, osdag_logo, org_logo):
 
 def toc_section():
     return r"""
-% Chapter / TOC Formatting
-\titleformat{\chapter}[block]
-  {\normalfont\Large\bfseries\centering}{\thechapter}{1em}{}
-\titlespacing*{\chapter}{0pt}{0pt}{10pt}
-\setcounter{tocdepth}{2}
+% Chapter / TOC Formatting (see styles.HEADINGS)
+""" + S.chapter_heading_format(S.HEADINGS["chapter_before_toc"]) + r"""
+\setcounter{tocdepth}{""" + str(S.HEADINGS["toc_tocdepth"]) + r"""}
 
 % TOC styling using titletoc
-\titlecontents{chapter}[1.5em]
-  {\normalfont\vspace{2pt}}
-  {\contentslabel{1.5em}}
-  {\hspace*{-1.5em}}
-  {\hfill\contentspage}
-
-\titlecontents{section}[3.8em]
-  {\normalfont}
-  {\contentslabel{2.3em}}
-  {\hspace*{-2.3em}}
-  {\hfill\contentspage}
-
-\titlecontents{subsection}[7.0em]
-  {\normalfont}
-  {\contentslabel{3.2em}}
-  {\hspace*{-3.2em}}
-  {\hfill\contentspage}
+""" + S.toc_entry_formats() + r"""
 
 \newpage
-\renewcommand{\contentsname}{\centering\Large\bfseries Table of Contents}
+\renewcommand{\contentsname}{\centering""" + S.FONT_SIZES["chapter"] + r"""\bfseries Table of Contents}
 \tableofcontents
 """
 
@@ -593,8 +542,8 @@ class ReportDataBridge:
             if val is not None:
                 ur = float(val)
                 if ur <= 1.0:
-                    return r"\textcolor{black}{PASS}"
-                return r"\textcolor{red}{FAIL}"
+                    return r"\textcolor{osdagPass}{PASS}"
+                return r"\textcolor{osdagFail}{FAIL}"
         except (TypeError, ValueError):
             pass
         return ""

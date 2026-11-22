@@ -1,3 +1,4 @@
+from osdagbridge.core.reports import styles as S
 from osdagbridge.core.utils.common import (
     KEY_MP_GD_MEMBER_ID,
     KEY_MP_GD_SELECT_GIRDER,
@@ -73,7 +74,7 @@ def get_girder_entries(input_dict):
     return entries
 
 
-def _fig_or_placeholder(path, caption, width=r'0.9\textwidth'):
+def _fig_or_placeholder(path, caption, width=S.FIGURE['default_width']):
     """Embed figure if path is provided (file already copied to assets), else show placeholder box.
     path is the relative path as pdflatex will see it (e.g. 'assets/plan.png').
     """
@@ -86,13 +87,13 @@ def _fig_or_placeholder(path, caption, width=r'0.9\textwidth'):
                 r'\end{figure}')
     return (r'\begin{figure}[H]' + '\n'
             r'\centering' + '\n'
-            r'\fbox{\parbox{0.97\textwidth}{' + '\n'
+            r'\fbox{\parbox{' + S.FIGURE['placeholder_width'] + '}{' + '\n'
             r'\textit{[ PLACEHOLDER: ' + caption + r' ]}' + '\n'
             r'}}' + '\n'
             r'\caption*{' + caption + '}\n'
             r'\end{figure}')
 
-def _fig_embed(path, caption, width=r'\textwidth', height=None):
+def _fig_embed(path, caption, width=S.FIGURE['full_width'], height=None):
     """Embed a real figure when path is provided (already copied); otherwise use an fbox placeholder."""
     if path:
         p = path.replace('\\', '/')
@@ -100,15 +101,15 @@ def _fig_embed(path, caption, width=r'\textwidth', height=None):
         if height:
             opts += ',height=' + height + ',keepaspectratio'
         return (r'\begin{figure}[H]' + '\n'
-                r'\vspace{-0.5em}' + '\n'
+                r'\vspace{-\osdagFigureSkip}' + '\n'
                 r'\centering' + '\n'
                 r'\includegraphics[' + opts + ']{' + p + '}\n'
-                r'\vspace{0.5em}' + '\n'
-                r'\caption*{\small ' + caption + '}\n'
-                r'\vspace{-0.5em}' + '\n'
+                r'\vspace{\osdagFigureSkip}' + '\n'
+                r'\caption*{\osdagCaptionFont ' + caption + '}\n'
+                r'\vspace{-\osdagFigureSkip}' + '\n'
                 r'\end{figure}')
     # fbox placeholder — matches template exactly
-    return (r'\noindent\fbox{\parbox{0.97\textwidth}{' + '\n'
+    return (r'\noindent\fbox{\parbox{' + S.FIGURE['placeholder_width'] + '}{' + '\n'
             r'\textit{[ PLACEHOLDER: ' + caption + r' ]}' + '\n'
             r'}}')
 

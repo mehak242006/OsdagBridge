@@ -2,6 +2,7 @@
 # EXECUTIVE SUMMARY
 # ═══════════════════════════════════════════════════════════════════════════════
 
+from osdagbridge.core.reports import styles as S
 from osdagbridge.core.reports.report_utils import _fig_or_placeholder, _render_value, _tex, get_girder_entries
 from osdagbridge.core.utils.common import (
     KEY_CARRIAGEWAY_WIDTH,
@@ -138,10 +139,12 @@ def executive_summary(input_dict, output_dict, fig_paths) -> str:
         labels = [("", "")]
     n_cols = len(labels)
 
-    # Column widths: row-label column fixed at 2.8cm; girder columns share remainder
-    label_col_cm = 2.8
-    # Available width ≈ 15.0cm for A4 with 1in margins; each girder col gets equal share
-    girder_col_cm = round(max(1.5, (15.0 - label_col_cm) / n_cols), 1)
+    # Column widths: fixed row-label column; girder columns share the remainder
+    # of the available text width (values from styles.EXEC_GEOMETRY_TABLE).
+    geo = S.EXEC_GEOMETRY_TABLE
+    label_col_cm = geo["label_col_cm"]
+    girder_col_cm = round(max(geo["min_girder_col_cm"],
+                              (geo["available_width_cm"] - label_col_cm) / n_cols), 1)
     col_spec = '|C{' + str(label_col_cm) + 'cm}|' + '|'.join(['C{' + str(girder_col_cm) + 'cm}'] * n_cols) + '|'
 
     # Header row
@@ -161,7 +164,7 @@ def executive_summary(input_dict, output_dict, fig_paths) -> str:
     urs = f"Utilization Ratio & {ur_cells} \\\\"
 
     table1 = (r'\noindent\textbf{Table 1 -- Final Bridge Geometry (after optimization)}' + '\n\n'
-              r'\vspace{0.4em}' + '\n'
+              r'\vspace{\osdagTightSkip}' + '\n'
               r'\noindent' + '\n'
               r'\begin{tabular}{' + col_spec + '}\n'
               r'\hline' + '\n'
@@ -179,9 +182,9 @@ def executive_summary(input_dict, output_dict, fig_paths) -> str:
 
     return r"""
 \newpage
-{\centering\Large\bfseries Executive Summary\par}
+{\centering\osdagChapterFont\bfseries Executive Summary\par}
 \addcontentsline{toc}{chapter}{Executive Summary}
-\vspace{0.8em}
+\vspace{\osdagMediumSkip}
 
 This section provides a concise summary of the bridge design, key inputs, governing loads, and final design outcomes.
 
@@ -190,7 +193,7 @@ This section provides a concise summary of the bridge design, key inputs, govern
 \label{sec:project-overview}
 
 
-\begin{tabular}{|L{5.5cm}|L{8.5cm}|}
+\begin{tabular}{""" + S.EXEC_GEOMETRY_TABLE["info_colspec"] + r"""}
 \hline
 \textbf{Bridge Type} & """ + (_render_value(input_dict, KEY_STRUCTURE_TYPE)) + r""" \\
 \hline
@@ -221,10 +224,10 @@ This section provides a concise summary of the bridge design, key inputs, govern
 
 """ + cs_fig + '\n\n' + geom_fig + '\n\n' + table1 + r"""
 
-\vspace{0.4em}
+\vspace{\osdagTightSkip}
 \noindent\textit{Note: Utilization ratio (UR) = demand / capacity. A value $< 1.0$ indicates a passing check.}
 
-\vspace{1em}
+\vspace{\osdagBlockSkip}
 
 \section*{Key Design Outcomes Summary}
 \addcontentsline{toc}{section}{Key Design Outcomes Summary}
@@ -247,6 +250,4 @@ Deck design pass
 \end{itemize}
 
 % Restore numbered chapter format
-\titleformat{\chapter}[block]{\normalfont\Large\bfseries\centering}{\thechapter}{1em}{}
-\titlespacing*{\chapter}{0pt}{-30pt}{10pt}
-"""
+""" + S.chapter_heading_format(S.HEADINGS["chapter_before"]) + "\n"
