@@ -598,6 +598,60 @@ class ReportDataBridge:
         except Exception:
             return ""
 
+    # --- shared by cross bracing and end diaphragms ---
+
+    #: namespace of the section-property keys ("transverse_member_design.<ns>...")
+    section_ns = "cb"
+    #: name of the diagonal member's section-property group
+    diagonal_props = "bracing"
+
+    def has_member_designs(self) -> bool:
+        """True when the design stage produced at least one member design."""
+        return any(bool(v) for v in (self._cb_pair_designs() or {}).values())
+
+    def end_diaphragm(self) -> "EndDiaphragmDataBridge":
+        """The same accessors, reading the end-diaphragm results."""
+        return EndDiaphragmDataBridge(self.output_dict, self.input_dict, self.payload)
+
+
+class EndDiaphragmDataBridge(ReportDataBridge):
+    """Cross-bracing accessors re-pointed at the end-diaphragm results.
+
+    Reads ``end_diaphragm_forces_dict`` / ``end_diaphragm_design_results``
+    (written by PlateGirderBridge._design_end_diaphragm_members) instead of
+    the cross-bracing data, so the end-diaphragm tables report end-diaphragm
+    values only.
+    """
+    section_ns = "ed"
+    diagonal_props = "end_diaphragm"
+
+    def _cb_forces_dict(self) -> dict:
+        return self.output_dict.get("end_diaphragm_forces_dict", {}) or {}
+
+    def _cb_pair_designs(self) -> dict:
+        return self.output_dict.get("end_diaphragm_design_results", {}) or {}
+
+    def get_cb_effective_length(self, member: str) -> str:
+        # end_diaphragm_forces_dict carries no geometry block
+        return ""
+
+    def get_cb_section(self, pair: str, member: str, force_type: str) -> str:
+        """Designed section if a member design exists, else the section selected in the inputs."""
+        designed = super().get_cb_section(pair, member, force_type)
+        if designed:
+            return designed
+        from osdagbridge.core.utils.common import (
+            KEY_MP_ED_BOTTOM_CHORD_SECTION_DESIG, KEY_MP_ED_BRACING_SECTION_DESIGNATION,
+        )
+        key = KEY_MP_ED_BRACING_SECTION_DESIGNATION if member == "diagonal" \
+            else KEY_MP_ED_BOTTOM_CHORD_SECTION_DESIG
+        prefix = f"{key}.{pair.replace('-', '')}."
+        for k, v in self.input_dict.items():
+            if str(k).startswith(prefix) and v:
+                return _tex(v)
+        return ""
+
+
 def _format_project_location(pl_data):
     if not pl_data:
         return ''
