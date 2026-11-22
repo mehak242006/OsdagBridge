@@ -108,7 +108,7 @@ def apply_field_style(widget):
 class ProjectLocationDialog(QDialog):
     """Dialog for selecting project location with multiple input methods."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *, location=None):
         super().__init__(parent)
         self.setMinimumWidth(780)
         self.setMinimumHeight(520)
@@ -156,9 +156,8 @@ class ProjectLocationDialog(QDialog):
         self._setup_ui()
         self._connect_signals()
         
-        # Restore previous session state if available, otherwise apply defaults
-        self._restore_session_state()
         self._capture_initial_session_state()
+        self._restore_session_state(location)
 
     def _capture_initial_session_state(self):
         """Capture module-level session state at dialog open time for cancel rollback."""
@@ -807,7 +806,7 @@ class ProjectLocationDialog(QDialog):
         self.state_combo.blockSignals(False)
         self.district_combo.blockSignals(False)
 
-    def _restore_session_state(self):
+    def _restore_session_state(self, location=None):
         """Restore previous session state or apply defaults if first open."""
         global LAST_LOCATION_METHOD, LAST_LOCATION_DATA, LAST_WEATHER_DATA, LAST_CUSTOM_DATA
 
@@ -815,6 +814,12 @@ class ProjectLocationDialog(QDialog):
         saved_location_data = dict(LAST_LOCATION_DATA) if isinstance(LAST_LOCATION_DATA, dict) else None
         saved_weather_data = dict(LAST_WEATHER_DATA) if isinstance(LAST_WEATHER_DATA, dict) else None
         saved_custom_data = dict(LAST_CUSTOM_DATA) if isinstance(LAST_CUSTOM_DATA, dict) else None
+        if isinstance(location, dict):
+            saved_method = location.get("method")
+            saved_location_data = location.get("data")
+            saved_weather_data = location.get("weather_data")
+            saved_custom_data = location.get("custom_weather_data") or saved_weather_data
+            self._current_weather_data = saved_weather_data
 
         if saved_method and saved_method == "custom_data" and saved_custom_data:
             # Restore custom data tab

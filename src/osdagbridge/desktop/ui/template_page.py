@@ -861,18 +861,15 @@ class CustomWindow(QWidget):
                 ).exec()
                 return
 
+            # Complete older files before notifying CAD or the additional-input dialog.
+            # The regular edit refresh resets defaults, so it must not run on a loaded design.
+            if data.get(KEY_CARRIAGEWAY_WIDTH) not in (None, ""):
+                data = with_missing_defaults(data)
             self.input_dock.populate_from_dict(data)
 
             # Sync additional inputs dialog if it has already been constructed
             if self._additional_inputs_dialog is not None:
                 self._additional_inputs_dialog.set_input_dictionary(self.input_dict)
-
-            # Refresh 2D CAD to reflect loaded values
-            try:
-                solve_extend_basic_input_dict(self.input_dict)
-                self.cad_comp_widget.update_from_osdag_inputs(self.input_dict)
-            except Exception:
-                pass
 
             CustomMessageBox(
                 title="Success",

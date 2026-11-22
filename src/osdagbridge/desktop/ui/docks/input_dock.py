@@ -813,14 +813,16 @@ class InputDock(QWidget):
     # ══════════════════════════════════════════════════════════════════════════
 
     def show_project_location_dialog(self):
-        dialog = ProjectLocationDialog()
+        dialog = ProjectLocationDialog(location=self.parent.input_dict.get(KEY_PROJECT_LOCATION))
         if dialog.exec() != QDialog.Accepted:
             return
 
         loc = dialog.get_selected_location()
         self._update_input_dict(KEY_PROJECT_LOCATION, loc)
+        self._update_project_location_display(loc)
 
-        # Update display — all mapping is done inside get_selected_location()
+    def _update_project_location_display(self, loc):
+        loc = loc if isinstance(loc, dict) else {}
         display_text = loc.get("display_text", "")
         show_display = loc.get("show_display", False)
 
@@ -1078,9 +1080,9 @@ class InputDock(QWidget):
                     widget.addItem(text)
                 self._set_combo_silently(widget, text)
 
-        # Mark required fields as changed so solve_extend_basic_input_dict
-        # runs on the next Design call and derives all computed defaults.
-        self.is_require_field_changed = True
+        self._update_project_location_display(data.get(KEY_PROJECT_LOCATION))
+        # Loaded inputs already include defaults. Refresh CAD without resetting them.
+        self.is_require_field_changed = False
         self.input_value_changed.emit()
 
     # ══════════════════════════════════════════════════════════════════════════
