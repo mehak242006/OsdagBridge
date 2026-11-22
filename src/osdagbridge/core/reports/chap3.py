@@ -1,3 +1,5 @@
+from osdagbridge.core.reports import styles as S
+from osdagbridge.core.reports.report_utils import longtable_begin
 # =============================================================================
 # Chapter 3: Loads and Load Combinations
 # Extracted from report_generator.py — DO NOT add business logic here.
@@ -272,12 +274,9 @@ def ch3_loads(input_dict):
 This section summarizes all loads applied to the bridge and the load combinations considered for analysis and design.
 
 \vspace{\osdagBlockSkip}
-\begin{longtable}{|L{5.5cm}|p{10.0cm}|}
-\caption{\textbf{Dead Load -- Self Weight}}
-\hline
-\textbf{parameter} & \textbf{value} \\
-\hline
-\textnormal{Steel Self-Weight Applied} & """ + (_render_value(input_dict, KEY_MATERIAL_GIRDER_DENSITY, ' kN/m\\textsuperscript{3}')) + r""" \\[\osdagRowPad]
+""" + longtable_begin(S.PARAM_VALUE_COLSPEC,
+    r"\textbf{parameter} & \textbf{value} \\",
+    caption=r"\textbf{Dead Load -- Self Weight}") + r"""\textnormal{Steel Self-Weight Applied} & """ + (_render_value(input_dict, KEY_MATERIAL_GIRDER_DENSITY, ' kN/m\\textsuperscript{3}')) + r""" \\[\osdagRowPad]
 \hline
 \textnormal{Concrete Deck Weight} & """ + (_render_value(input_dict, KEY_MATERIAL_DECK_DENSITY, ' kN/m\\textsuperscript{3}')) + r""" \\[\osdagRowPad]
 \hline
@@ -286,12 +285,9 @@ This section summarizes all loads applied to the bridge and the load combination
 \end{longtable}
 
 \vspace{\osdagBlockSkip}
-\begin{longtable}{|L{5.5cm}|p{10.0cm}|}
-\caption{\textbf{Dead Load for Surfacing (DW)}}
-\hline
-\textbf{parameter} & \textbf{value} \\
-\hline
-\textnormal{Wearing Course Load} & """ + (_render_value(input_dict, KEY_WC_MATERIAL)) + r""" x """ + (_render_value(input_dict, KEY_WC_THICKNESS)) + r""" \\[\osdagRowPad]
+""" + longtable_begin(S.PARAM_VALUE_COLSPEC,
+    r"\textbf{parameter} & \textbf{value} \\",
+    caption=r"\textbf{Dead Load for Surfacing (DW)}") + r"""\textnormal{Wearing Course Load} & """ + (_render_value(input_dict, KEY_WC_MATERIAL)) + r""" x """ + (_render_value(input_dict, KEY_WC_THICKNESS)) + r""" \\[\osdagRowPad]
 \hline
 \textnormal{Additional SIDL (Crash Barrier)} & """ + (_render_value(input_dict, KEY_CB_LOAD)) + r""" kN/m per barrier \\[\osdagRowPad]
 \hline
@@ -300,12 +296,9 @@ This section summarizes all loads applied to the bridge and the load combination
 \end{longtable}
 
 \vspace{\osdagBlockSkip}
-\begin{longtable}{|L{5.5cm}|p{10.0cm}|}
-\caption{\textbf{Live Loads (LL)}}
-\hline
-\textbf{parameter} & \textbf{value} \\
-\hline
-\textnormal{Vehicles Considered} & """ + _tex(vehicles_str) + r""" \\[\osdagRowPad]
+""" + longtable_begin(S.PARAM_VALUE_COLSPEC,
+    r"\textbf{parameter} & \textbf{value} \\",
+    caption=r"\textbf{Live Loads (LL)}") + r"""\textnormal{Vehicles Considered} & """ + _tex(vehicles_str) + r""" \\[\osdagRowPad]
 \hline
 \textnormal{Impact Factor (IRC 6)} & """ + _tex(impact_factor_str) + r""" \\[\osdagRowPad]
 \hline
@@ -316,12 +309,9 @@ This section summarizes all loads applied to the bridge and the load combination
 \end{longtable}
 
 \vspace{\osdagBlockSkip}
-\begin{longtable}{|L{5.5cm}|p{10.0cm}|}
-\caption{\textbf{Wind Load (WL) --- per IRC 6}}
-\hline
-\textbf{parameter} & \textbf{value} \\
-\hline
-\textnormal{Basic Wind Speed, Vb} & """ + (_render_value(input_dict,'wind_speed', ' m/s')) + r""" [from Project Location] \\[\osdagRowPad]
+""" + longtable_begin(S.PARAM_VALUE_COLSPEC,
+    r"\textbf{parameter} & \textbf{value} \\",
+    caption=r"\textbf{Wind Load (WL) --- per IRC 6}") + r"""\textnormal{Basic Wind Speed, Vb} & """ + (_render_value(input_dict,'wind_speed', ' m/s')) + r""" [from Project Location] \\[\osdagRowPad]
 \hline
 \textnormal{Terrain Type} & """ + (_render_value(input_dict, KEY_WL_TERRAIN_TYPE)) + r""" \\[\osdagRowPad]
 \hline
@@ -340,12 +330,9 @@ This section summarizes all loads applied to the bridge and the load combination
 \end{longtable}
 
 \vspace{\osdagBlockSkip}
-\begin{longtable}{|L{5.5cm}|p{10.0cm}|}
-\caption{\textbf{Earthquake Load (EL) --- per IRC 6}}
-\hline
-\textbf{parameter} & \textbf{value} \\
-\hline
-\textnormal{Seismic Zone} & """ + (_render_value(input_dict,'seismic_zone')) + r""" [from Project Location] \\[\osdagRowPad]
+""" + longtable_begin(S.PARAM_VALUE_COLSPEC,
+    r"\textbf{parameter} & \textbf{value} \\",
+    caption=r"\textbf{Earthquake Load (EL) --- per IRC 6}") + r"""\textnormal{Seismic Zone} & """ + (_render_value(input_dict,'seismic_zone')) + r""" [from Project Location] \\[\osdagRowPad]
 \hline
 \textnormal{Zone Factor, Z} & """ + (_render_value(input_dict, KEY_SL_ZONE_FACTOR)) + r""" \\[\osdagRowPad]
 \hline
@@ -366,12 +353,9 @@ This section summarizes all loads applied to the bridge and the load combination
 \end{longtable}
 
 \vspace{\osdagBlockSkip}
-\begin{longtable}{|L{5.5cm}|p{10.0cm}|}
-\caption{\textbf{Temperature Load (TL) --- per IRC 6}}
-\hline
-\textbf{parameter} & \textbf{value} \\
-\hline
-\textnormal{Maximum Shade Temperature} & """ + (_render_value(input_dict,'shade_temp_max')) + r""" $^\circ$C \\[\osdagRowPad]
+""" + longtable_begin(S.PARAM_VALUE_COLSPEC,
+    r"\textbf{parameter} & \textbf{value} \\",
+    caption=r"\textbf{Temperature Load (TL) --- per IRC 6}") + r"""\textnormal{Maximum Shade Temperature} & """ + (_render_value(input_dict,'shade_temp_max')) + r""" $^\circ$C \\[\osdagRowPad]
 \hline
 \textnormal{Minimum Shade Temperature} & """ + (_render_value(input_dict,'shade_temp_min')) + r""" $^\circ$C \\[\osdagRowPad]
 \hline
@@ -382,12 +366,9 @@ This section summarizes all loads applied to the bridge and the load combination
 \end{longtable}
 
 \vspace{\osdagBlockSkip}
-\begin{longtable}{|C{4.0cm}|p{11.5cm}|}
-\caption{\textbf{Load Combinations}}
-\hline
-\textbf{Combination ID} & \textbf{Load Cases} \\[\osdagRowPad]
-\hline
-""" + lc_rows_str + r"""
+""" + longtable_begin(r"|C{4.0cm}|p{11.5cm}|",
+    r"\textbf{Combination ID} & \textbf{Load Cases} \\[\osdagRowPad]",
+    caption=r"\textbf{Load Combinations}") + lc_rows_str + r"""
 \end{longtable}
 
 \noindent\textit{Note: All IRC 6 load combinations are auto-generated by OsdagBridge. User-defined custom combinations, if any, are appended.}

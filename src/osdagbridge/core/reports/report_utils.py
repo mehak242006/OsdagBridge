@@ -114,3 +114,72 @@ def _fig_embed(path, caption, width=S.FIGURE['full_width'], height=None):
             r'}}')
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# Multi-page tables (R1): longtable with a header that repeats on every page
+# ═══════════════════════════════════════════════════════════════════════════
+
+def count_columns(colspec):
+    """Number of columns in a LaTeX array preamble such as
+    ``|C{2.5cm}|>{\\centering\\arraybackslash}p{4.2cm}|l|``.
+
+    Column letters are counted at brace depth 0; the braced arguments of
+    ``p{}``/``L{}``-style columns and of ``>{}``, ``<{}``, ``@{}``, ``!{}``
+    are skipped.
+    """
+    n, depth, i = 0, 0, 0
+    while i < len(colspec):
+        ch = colspec[i]
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+        elif depth == 0 and ch in 'lcrpmbXLCR':
+            n += 1
+        i += 1
+    if n == 0:
+        raise ValueError(f"no columns found in colspec {colspec!r}")
+    return n
+
+
+def _shade_header(header):
+    """Prefix each header row with the header background colour."""
+    rows = header.strip()
+    return r'\rowcolor{osdagTableHeader}' + rows
+
+
+def longtable_begin(colspec, header, caption=None, label=None, shade=True):
+    """Opening of a ``longtable`` whose column header repeats on every page.
+
+    Returns everything from ``\\begin{longtable}`` up to and including
+    ``\\endlastfoot``; the caller appends the body rows and
+    ``\\end{longtable}`` exactly as before.
+
+    * first page  : caption + header                  (``\\endfirsthead``)
+    * later pages : "caption (continued)" + header    (``\\endhead``)
+    * page bottom : "Continued on next page" note     (``\\endfoot``)
+    * last page   : nothing extra                     (``\\endlastfoot``)
+
+    ``header`` is the header row(s) including the row terminator(s),
+    e.g. ``r"\\textbf{A} & \\textbf{B} \\\\[\\osdagRowPad]"``.
+    """
+    ncols = count_columns(colspec)
+    head = _shade_header(header) if shade else header.strip()
+    head_block = '\\hline\n' + head + '\n\\hline\n'
+
+    first = ''
+    cont = ''
+    if caption:
+        lbl = ('\\label{' + label + '}') if label else ''
+        first = '\\caption{' + caption + '}' + lbl + '\\\\\n'
+        cont = '\\caption[]{' + caption + ' ' + S.TABLE_CONTINUED_SUFFIX + '}\\\\\n'
+
+    note = ('\\multicolumn{' + str(ncols) + '}{r}{\\osdagFootnoteFont '
+            + S.TABLE_CONTINUES_NOTE + '}\\\\\n')
+
+    return ('\\begin{longtable}{' + colspec + '}\n'
+            + first + head_block + '\\endfirsthead\n'
+            + cont + head_block + '\\endhead\n'
+            + note + '\\endfoot\n'
+            + '\\endlastfoot\n')
+
+

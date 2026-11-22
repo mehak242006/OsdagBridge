@@ -45,7 +45,13 @@ COLORS = {
     "osdagWarning": "0000FF",   # warning lines in the design log
     "osdagError":   "FF0000",   # error lines in the design log
     "osdagText":    "000000",   # neutral text (software-default footnote)
+    "osdagTableHeader": "EEF3DC",  # light tint of osdagGreen behind table header rows
 }
+
+# Text appended to a table caption on continuation pages, and the note printed
+# at the bottom of a page where a table continues.
+TABLE_CONTINUED_SUFFIX = r"\textit{(continued)}"
+TABLE_CONTINUES_NOTE = r"\textit{Continued on next page}"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 3. Typography
