@@ -1,7 +1,50 @@
 from osdagbridge.core.reports.report_utils import longtable_begin
 
 
-def ch7_quantities(input_dict):
+def _mt(input_dict, key):
+    """Value of a Table 7.1 entry as a float, or None when the BOQ did not compute it ('N.A.')."""
+    try:
+        return float(str(input_dict.get(key)).replace(',', ''))
+    except (TypeError, ValueError):
+        return None
+
+
+def quantity_chart_data(input_dict):
+    """Chart values taken from the same keys as Table 7.1 (nothing is recalculated).
+
+    Returns (steel_items, concrete_m3, rebar_mt). Steel is in MT per member group;
+    cross bracing is the sum of its top, bottom and diagonal chords. The BOQ has no
+    end-diaphragm quantity, so that bar is None and drawn as 'n/a'.
+    """
+    girders = _mt(input_dict, 'steel_girders_wt_total')
+    parts = [_mt(input_dict, k) for k in ('bracing_top_wt_total', 'bracing_bot_wt_total', 'bracing_diag_wt_total')]
+    bracing = sum(parts) if all(v is not None for v in parts) else None
+    steel_items = [('Girders', girders), ('Cross bracing', bracing), ('End diaphragms', None)]
+    return steel_items, _mt(input_dict, 'concrete_deck_vol_total'), _mt(input_dict, 'rebar_deck_wt_total')
+
+
+def _quantity_chart_tex(input_dict, chart_dir):
+    """R5: bar charts of the Table 7.1 quantities, saved to the temporary assets folder."""
+    if not chart_dir:
+        return ''
+    import logging, os
+    from osdagbridge.core.reports.charts import build_quantity_figure, chart_figure_tex, save_chart
+    steel_items, concrete, rebar = quantity_chart_data(input_dict)
+    if all(v is None for _, v in steel_items) and concrete is None and rebar is None:
+        return ''
+    try:
+        save_chart(build_quantity_figure(steel_items, concrete, rebar), chart_dir, 'quantities')
+    except Exception as exc:                       # never break the report for a chart
+        logging.getLogger(__name__).warning('Quantity chart not generated: %s', exc)
+        return r'\noindent\textit{Quantity chart could not be generated.}'
+    return chart_figure_tex(
+        os.path.basename(chart_dir) + '/quantities.png',
+        'Material quantities from Table~7.1: (a) structural steel by member group (MT; no end-diaphragm '
+        'quantity is computed by OsdagBridge), (b) concrete volume (m' + chr(36) + '^3' + chr(36) + '), (c) reinforcement steel weight (MT)',
+        label='fig:quantities')
+
+
+def ch7_quantities(input_dict, chart_dir=None):
     return r"""
 \chapter{Material Take-off \& Quantity Summary}
 \label{ch:material-takeoff}
@@ -29,6 +72,6 @@ def ch7_quantities(input_dict):
 \hline
 \end{longtable}
 \endgroup
-"""
+""" + _quantity_chart_tex(input_dict, chart_dir) + "\n"
 
 

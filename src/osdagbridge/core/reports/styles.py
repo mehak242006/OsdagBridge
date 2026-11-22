@@ -229,17 +229,20 @@ CHART = {
     "font_family":     "DejaVu Sans",
     "font_size":       9,
     "title_size":      10,
-    "pass_color":      "#91B014",        # osdagGreen
-    "fail_color":      "#D62728",
-    "na_color":        "#BDBDBD",
-    "threshold_color": "red",
+    # pass/fail are status colours (never reused for series); every bar also
+    # carries its value and FAIL bars are hatched, so colour is never alone
+    "pass_color":      "#0ca30c",        # status: good
+    "fail_color":      "#d03b3b",        # status: critical
+    "na_color":        "#c8c8c8",        # not computed (hatched, labelled "n/a")
+    "fail_hatch":      "//",
+    "threshold_color": "red",            # FOSSEE spec: red dashed line at UR = 1.0
     "threshold_style": "--",
     "threshold_width": 1.4,
-    "bar_edge_color":  "#333333",
-    "grid_color":      "#DDDDDD",
-    "steel_color":     "#4C72B0",
-    "concrete_color":  "#8C8C8C",
-    "rebar_color":     "#C44E52",
+    "text_color":      "#333333",
+    "muted_color":     "#6b6b6b",
+    "grid_color":      "#e4e4e4",
+    "series_color":    "#2a78d6",        # single-series quantity charts
+    "bar_width":       0.6,
 }
 
 

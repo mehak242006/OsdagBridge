@@ -3,10 +3,12 @@
 # Extracted from report_generator.py — DO NOT add business logic here.
 # =============================================================================
 from __future__ import annotations
+import os
 from typing import TYPE_CHECKING
 
 from osdagbridge.core.reports import styles as S
 from osdagbridge.core.reports.report_utils import longtable_begin
+from osdagbridge.core.reports import ur_summary as URS
 
 from osdagbridge.core.utils.common import (
     KEY_DD_AS_BOT,
@@ -293,7 +295,7 @@ def _transverse_member_rows(data):
 
 if TYPE_CHECKING:
     pass
-def ch5_design_checks(checks_data, bridge) -> str:
+def ch5_design_checks(checks_data, bridge, chart_dir=None) -> str:
     """Chapter 5 — Design Checks.
 
     Parameters
@@ -935,97 +937,43 @@ Fatigue Shear Resistance, $Q_r$ & IRC 22 Table 8 ($\phi d$, $N_{sc}$) & """
         # "ACCIDENTAL 1: 1.0DL + 1.0DW + 0.75LL" (the per_lc key).
         return _tex(str(lc).strip())
 
+    # Governing values are selected in ur_summary (shared with the R4 charts);
+    # the functions below only format them for Table 5.29.
     def _gov_lc_in_522(g, check_ids):
-        gd = _pg_522.get(g) or {}
-        best = None
-        for _lc, _ld in (gd.get("per_lc") or {}).items():
-            if str(_lc).lower().startswith("envelope"):
-                continue
-            for _chk in (_ld.get("checks") or []):
-                if _chk.get("id") in check_ids:
-                    _d = _chk.get("dcr") or 0.0
-                    if best is None or _d > best[0]:
-                        best = (_d, _lc)
-        return _lc_short(best[1]) if best else "---"
+        lc = URS.girder_governing_lc(_pg_522, g, check_ids)
+        return _lc_short(lc) if lc else "---"
 
     def _dcr_row(check_ids, fallback_unit=""):
-        # Prefer per_girder["checks"] (carries units); worst girder by DCR.
-        best = None  # (dcr, demand, capacity, dunit, cunit, g)
-        for g, gd in _pg_522.items():
-            if str(g).startswith("EB"):
-                continue
-            for chk in (gd.get("checks") or []):
-                if chk.get("check_id") in check_ids:
-                    d = chk.get("dcr") or 0.0
-                    if best is None or d > best[0]:
-                        best = (d, chk.get("demand"), chk.get("capacity"),
-                                chk.get("demand_unit") or "", chk.get("capacity_unit") or "", g)
-        if best is not None:
-            d, dem, cap, du, cu, g = best
-            return (_gov_lc_in_522(g, check_ids),
-                    _vu_522(dem, du) or "---", _vu_522(cap, cu) or "---", _ur_522(d) or "---")
-        # Fallback: per_lc (no units) for SLS-conditional checks (e.g. deflection).
-        best = None  # (dcr, demand, capacity, lc)
-        for g, gd in _pg_522.items():
-            if str(g).startswith("EB"):
-                continue
-            for _lc, _ld in (gd.get("per_lc") or {}).items():
-                if str(_lc).lower().startswith("envelope"):
-                    continue
-                for chk in (_ld.get("checks") or []):
-                    if chk.get("id") in check_ids:
-                        d = chk.get("dcr") or 0.0
-                        if best is None or d > best[0]:
-                            best = (d, chk.get("demand"), chk.get("capacity"), _lc)
+        # Prefer per_girder["checks"] (carries units); worst girder by DCR;
+        # per_lc fallback (no units) for SLS-conditional checks (deflection).
+        best = URS.girder_governing(_pg_522, check_ids, fallback_unit)
         if best is None:
             return ("---", "---", "---", "---")
-        d, dem, cap, _lc = best
-        return (_lc_short(_lc),
-                _vu_522(dem, fallback_unit) or "---", _vu_522(cap, fallback_unit) or "---",
-                _ur_522(d) or "---")
+        lc = (_gov_lc_in_522(best["girder"], check_ids) if "girder" in best
+              else _lc_short(best["lc"]))
+        return (lc,
+                _vu_522(best["demand"], best["demand_unit"]) or "---",
+                _vu_522(best["capacity"], best["capacity_unit"]) or "---",
+                _ur_522(best["ur"]) or "---")
 
     # (3) Cross bracing — worst pair/member by UR for the given force type.
-    _cb_pairs_522 = bridge.get_cb_pairs()
-
     def _cb_row(force_type, data=None):
         # data: bridge (cross bracing, default) or bridge.end_diaphragm()
         data = data or bridge
-        best = None  # (ur, pair, member, capacity_str)
-        for pair in data.get_cb_pairs():
-            for member in ("diagonal", "chord"):
-                cap = data.get_cb_capacity(pair, member, force_type)
-                eff = data.get_cb_efficiency(pair, member, force_type)
-                try:
-                    ur = float(eff)
-                except (TypeError, ValueError):
-                    continue
-                if best is None or ur > best[0]:
-                    best = (ur, pair, member, cap)
+        best = URS.member_governing(data, force_type)
         if best is None:
             return ("---", "---", "---", "---")
-        ur, pair, member, cap = best
-        gov = data.get_cb_gov_lc(pair, member, force_type) or "---"
+        ur, cap = best["ur"], best["capacity"]
+        gov = data.get_cb_gov_lc(best["pair"], best["member"], force_type) or "---"
         dem = f"{float(cap) * ur:.2f} kN" if cap else "---"
         cap_s = (cap + " kN") if cap else "---"
         return (gov, dem, cap_s, _ur_522(ur))
 
     def _cb_slender_row():
-        best = None  # (ratio, slend, limit)
-        for pair in _cb_pairs_522:
-            for member in ("diagonal", "chord"):
-                s = bridge.get_cb_slenderness(pair, member)
-                try:
-                    sf = float(s)
-                except (TypeError, ValueError):
-                    continue
-                lim = 400.0 if member == "chord" else 250.0
-                ratio = sf / lim
-                if best is None or ratio > best[0]:
-                    best = (ratio, sf, lim)
+        best = URS.slenderness_governing(bridge)
         if best is None:
             return ("---", "---", "---", "---")
-        ratio, sf, lim = best
-        return ("---", f"{sf:.1f}", f"{lim:.0f}", _ur_522(ratio))
+        return ("---", f"{best['slenderness']:.1f}", f"{best['limit']:.0f}", _ur_522(best["ur"]))
 
     def _row522(label, cells):
         c = [x if x else "---" for x in cells]
@@ -1040,14 +988,12 @@ Fatigue Shear Resistance, $Q_r$ & IRC 22 Table 8 ($\phi d$, $N_{sc}$) & """
     ) if _dk_has else "---"
 
     def _deck_row(dem_key, cap_key, unit, is_oh=False):
-        if not _dk_has:
+        r = URS.deck_ratio(deck_rpt, dem_key, cap_key, is_oh)
+        if r is None:
             return ("---", "---", "---", "---")
-        if is_oh and not _dk_oh:
+        if r == "n/a":
             return (_deck_combo, "N/A", "N/A", "N/A")
-        dem = _dkv(dem_key)
-        cap = _dkv(cap_key)
-        ur = (dem / cap) if cap > 0 else None
-        return (_deck_combo, f"{dem:.2f} {unit}", f"{cap:.2f} {unit}", _ur_522(ur))
+        return (_deck_combo, f"{r['demand']:.2f} {unit}", f"{r['capacity']:.2f} {unit}", _ur_522(r["ur"]))
 
     def _row522_msg(label, msg):
         # Single message spanning the 4 data columns of Table 5.29
@@ -1085,12 +1031,12 @@ Fatigue Shear Resistance, $Q_r$ & IRC 22 Table 8 ($\phi d$, $N_{sc}$) & """
                     best = (_d, _lc)
         return _tex(str(best[1]).strip()) if best else "Frequent SLS"
 
-    _wk_lim = _dkv(KEY_DD_WK_LIMIT)
+    _crack = URS.deck_crack_ratio(deck_rpt)
     _crack_cells = (
-        (_gov_sls_frequent() if _dk_has else "---"),
-        (f"{_dk_gov_wk:.3f} mm" if _dk_has else "---"),
-        (f"{_wk_lim:.3f} mm" if _dk_has else "---"),
-        (_ur_522(_dk_gov_wk / _wk_lim) if (_dk_has and _wk_lim > 0) else "---"),
+        (_gov_sls_frequent() if _crack else "---"),
+        (f"{_crack['demand']:.3f} mm" if _crack else "---"),
+        (f"{_crack['capacity']:.3f} mm" if _crack else "---"),
+        (_ur_522(_crack["ur"]) if (_crack and _crack["ur"] is not None) else "---"),
     )
 
     _t522 = [
@@ -1474,5 +1420,23 @@ End diaphragms at the supports transfer transverse loads to the bearings, restra
 \end{longtable}
 \noindent\textit{Note: UR = Demand / Capacity. All values $\leq 1.0$ indicate passing checks. The governing check for each component is highlighted in the individual design check sections above.}
 
-"""
+""" + _ur_chart_tex(bridge, chart_dir) + "\n"
+
+
+def _ur_chart_tex(bridge, chart_dir):
+    """R4: governing-UR bar charts embedded after Table 5.29 (same values)."""
+    if not chart_dir:
+        return ""
+    from osdagbridge.core.reports.charts import build_ur_figure, chart_figure_tex, save_chart
+    try:
+        save_chart(build_ur_figure(URS.overall_ur_summary(bridge)), chart_dir, "ur_summary")
+    except Exception as exc:                       # never break the report for a chart
+        import logging
+        logging.getLogger(__name__).warning("UR chart not generated: %s", exc)
+        return r"\noindent\textit{Utilization ratio chart could not be generated.}" + "\n"
+    return chart_figure_tex(
+        os.path.basename(chart_dir) + "/ur_summary.png",
+        r"Governing utilization ratio (UR = Demand / Capacity) of each check, by element "
+        r"(values of Table~5.29); red dashed line: UR = 1.0",
+        label="fig:ur-summary")
 

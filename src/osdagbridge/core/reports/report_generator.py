@@ -886,6 +886,10 @@ def generate_report(payload, request):
             # ── Write figure bytes into tmp_dir/images/ then free RAM immediately ──
             tmp_images = os.path.join(tmp_dir, 'images')
             os.makedirs(tmp_images, exist_ok=True)
+            # Generated charts (R4/R5) are saved here for the compile only;
+            # the whole tmp_dir is deleted when generation ends.
+            chart_dir = os.path.join(tmp_dir, 'charts')
+            os.makedirs(chart_dir, exist_ok=True)
             fig_paths = {}
             for attr, img_bytes in list(payload.figure_data.items()):
                 if img_bytes:
@@ -943,11 +947,11 @@ def generate_report(payload, request):
             if 'analysis' in secs:
                 doc_parts.append(ch4_analysis(payload.analysis_summary, fig_paths, bridge, span_m))
             if 'design_checks' in secs:
-                doc_parts.append(ch5_design_checks(payload.design_checks, bridge))
+                doc_parts.append(ch5_design_checks(payload.design_checks, bridge, chart_dir))
             if 'drawings' in secs and payload.options.include_figures:
                 doc_parts.append(ch6_drawings(fig_paths))
 
-            doc_parts.append(ch7_quantities(payload.inputs))
+            doc_parts.append(ch7_quantities(payload.inputs, chart_dir))
 
             mode = str(payload.inputs.get(KEY_DESIGN_MODE, "Optimized")).strip().lower()
             is_custom = mode in {"custom", "customized"}
