@@ -106,3 +106,11 @@ def test_compiled_table_repeats_header_on_every_page(tmp_path):
             assert "(continued)" in page
         if i < len(pages) - 1:
             assert "Continued on next page" in page
+
+
+def test_tex_escapes_relational_unicode_as_math():
+    from osdagbridge.core.reports.report_utils import _tex
+    out = _tex("Leg ≤ H_limit, t ≥ 25")
+    assert "≤" not in out and "≥" not in out
+    assert r"\ensuremath{\leq}" in out and r"\ensuremath{\geq}" in out
+    assert r"H\_" in out  # normal escaping still applied

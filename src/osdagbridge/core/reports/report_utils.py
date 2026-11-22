@@ -23,6 +23,10 @@ def _tex(value):
                     ('~', r'\textasciitilde{}'), ('^', r'\^{}')]:
         s = s.replace(ch, esc)
     s = s.replace(':', r':\allowbreak{}')
+    # Math relations in check names (e.g. "Leg ≤ H_limit"): typeset as math
+    # symbols. Done after escaping so the inserted macros are not escaped.
+    for uni, macro in [('≤', r'\ensuremath{\leq}'), ('≥', r'\ensuremath{\geq}')]:
+        s = s.replace(uni, macro)
     return s
 
 
