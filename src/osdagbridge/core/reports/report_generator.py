@@ -118,7 +118,7 @@ from osdagbridge.core.utils.common import (
     KEY_TL_TEMP_RISE
 )
 
-from osdagbridge.core.reports.report_utils import _tex
+from osdagbridge.core.reports.report_utils import _tex, keep_row_groups_together
 from osdagbridge.core.reports import styles as S
 from .executive_summary import executive_summary
 from .chap1 import ch1_project_info
@@ -227,9 +227,20 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
 % Custom Commands
 \newcommand{\placeholder}[1]{\textit{\textless #1\textgreater}}
 \newcommand{\todo}[1]{\colorbox{yellow}{TODO: #1}}
-\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
-\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
-\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+% A \cline is its own table row followed by \vskip-\arrayrulewidth; glue after a
+% row is a legal page break, so longtable could break right after a \cline,
+% i.e. inside a \multirow row group, and the group label would then be drawn
+% into the footer. \cline is only used inside such groups, so forbid that break.
+\makeatletter
+\patchcmd{\@cline}{\noalign{\vskip-\arrayrulewidth}}{\noalign{\nobreak\vskip-\arrayrulewidth}}%
+  {}{\PackageWarningNoLine{osdagbridge}{could not patch \string\cline}}
+\makeatother
+
+% \hspace{0pt} lets TeX hyphenate the first word of a cell, so a long single
+% word (e.g. a bold header "Capacity") wraps instead of overflowing a narrow column.
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash\hspace{0pt}}p{#1}}
 
 % Software-default asterisk
 \newcommand{\sdstar}{\textsuperscript{*}}
@@ -303,6 +314,9 @@ def title_page(m, osdag_logo, org_logo):
 \hline
 \end{tabular}
 \end{titlepage}
+% the titlepage environment resets the counter to 1; continue from 2 so the
+% page after the title page is not also numbered "Page 1"
+\setcounter{page}{2}
 """
 
 
@@ -890,11 +904,11 @@ def generate_report(payload, request):
 
             full_tex = "\n".join(doc_parts)
 
-
-            # NOTE: longtable header repetition is handled per-table in each
-            # chapter file (e.g. \endfirsthead / \endhead).  No automatic
-            # post-processing is applied here to avoid mis-ordering captions
-            # and column headings.
+            # NOTE: longtable header repetition is handled per-table by
+            # report_utils.longtable_begin() (\endfirsthead / \endhead).
+            # The only document-wide pass keeps each \multirow row group on
+            # one page so its label cannot be drawn into the footer (R2).
+            full_tex = keep_row_groups_together(full_tex)
 
             tmp_tex = os.path.join(tmp_dir, request.file_stem + '.tex')
             tmp_pdf = os.path.join(tmp_dir, request.file_stem + '.pdf')

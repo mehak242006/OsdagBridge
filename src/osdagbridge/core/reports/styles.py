@@ -28,11 +28,44 @@ DOCUMENT_CLASS = "report"
 PAPER = "a4paper"
 BASE_FONT_SIZE = "12pt"
 LINE_STRETCH = 1.15              # \setstretch
+# Extra stretch TeX may use before letting a line (or a narrow table cell)
+# run past its box: avoids over-wide lines with long codes such as
+# "IRC 6:2017 Cl.208.2/208.3".
+EMERGENCY_STRETCH = "3em"
 
-# Options passed to \usepackage[...]{geometry}
+# Options passed to \usepackage[...]{geometry}.
+# * left/right 20 mm: 170 mm text width so the report's wide tables fit
+#   inside the printable area (with 1in they overflowed the right margin).
+# * headheight 18pt: fancyhdr needs >= 17.5pt for the two-part header;
+#   with the default 12pt the header box overflowed on every page.
+# * footskip 14mm: places the footer (and the "* Software default value"
+#   note drawn just above the footer rule) clear of the last text line.
+# * top/bottom 1in keep the text block ending at y = 770pt on A4.
 PAGE_GEOMETRY = {
-    "margin": "1in",
+    "top":        "1in",
+    "bottom":     "1in",
+    "left":       "20mm",
+    "right":      "20mm",
+    "headheight": "18pt",
+    "footskip":   "14mm",
 }
+PAPER_WIDTH_MM = 210.0
+
+PT_PER_CM = 72.27 / 2.54
+
+
+def _to_cm(length: str) -> float:
+    """Convert '20mm' / '1in' / '2.5cm' / '6pt' to centimetres."""
+    for unit, factor in (("mm", 0.1), ("cm", 1.0), ("in", 2.54), ("pt", 1 / PT_PER_CM)):
+        if length.endswith(unit):
+            return float(length[: -len(unit)]) * factor
+    raise ValueError(f"unsupported length {length!r}")
+
+
+def text_width_cm() -> float:
+    """Width of the text block implied by PAGE_GEOMETRY."""
+    return (PAPER_WIDTH_MM / 10.0
+            - _to_cm(PAGE_GEOMETRY["left"]) - _to_cm(PAGE_GEOMETRY["right"]))
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 2. Colour palette  (name -> HTML hex)
@@ -91,6 +124,11 @@ TABLE = {
     "rule_width":      "0.5pt",    # \arrayrulewidth
     "extra_row_height": "0.6pt",   # \extrarowheight
     "needspace_lines": 5,          # min. free lines before a table starts
+    # longtable typesets rows in chunks of \LTchunksize (default 20); at a
+    # chunk boundary the "no page break" request of \\* is dropped, so a
+    # row group could still be split. A chunk larger than any report table
+    # removes those boundaries.
+    "lt_chunk_size":   1000,
 }
 
 # Repeated column specification of the two-column "parameter | value" tables.
@@ -100,7 +138,6 @@ PARAM_VALUE_COLSPEC = r"|L{5.5cm}|p{10.0cm}|"
 # equal-width column per girder sharing the remaining width.
 EXEC_GEOMETRY_TABLE = {
     "label_col_cm":       2.8,
-    "available_width_cm": 15.0,
     "min_girder_col_cm":  1.5,
     "info_colspec":       r"|L{5.5cm}|L{8.5cm}|",
 }
@@ -224,11 +261,13 @@ def latex_style_definitions() -> str:
         lines.append(rf"\newcommand{{\{name}}}{{{value}}}")
     t = TABLE
     lines.append(rf"\newcommand{{\osdagDenseArrayStretch}}{{{t['arraystretch_dense']}}}")
+    lines.append(rf"\setlength{{\emergencystretch}}{{{EMERGENCY_STRETCH}}}")
     lines += [
         rf"\setlength{{\tabcolsep}}{{{t['tabcolsep']}}}",
         rf"\renewcommand{{\arraystretch}}{{{t['arraystretch']}}}",
         rf"\setlength{{\LTpre}}{{{t['lt_pre']}}}",
         rf"\setlength{{\LTpost}}{{{t['lt_post']}}}",
+        rf"\setcounter{{LTchunksize}}{{{t['lt_chunk_size']}}}",
         rf"\setlength{{\arrayrulewidth}}{{{t['rule_width']}}}",
         rf"\setlength{{\extrarowheight}}{{{t['extra_row_height']}}}",
         rf"\BeforeBeginEnvironment{{table}}{{\needspace{{{t['needspace_lines']}\baselineskip}}}}",

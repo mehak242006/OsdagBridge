@@ -1,3 +1,5 @@
+import re
+
 from osdagbridge.core.reports import styles as S
 from osdagbridge.core.utils.common import (
     KEY_MP_GD_MEMBER_ID,
@@ -112,10 +114,11 @@ def _fig_embed(path, caption, width=S.FIGURE['full_width'], height=None):
                 r'\caption*{\osdagCaptionFont ' + caption + '}\n'
                 r'\vspace{-\osdagFigureSkip}' + '\n'
                 r'\end{figure}')
-    # fbox placeholder — matches template exactly
+    # fbox placeholder — ends the paragraph so consecutive placeholders stack
+    # vertically instead of being set side by side on one over-wide line.
     return (r'\noindent\fbox{\parbox{' + S.FIGURE['placeholder_width'] + '}{' + '\n'
             r'\textit{[ PLACEHOLDER: ' + caption + r' ]}' + '\n'
-            r'}}')
+            r'}}\par')
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -145,10 +148,77 @@ def count_columns(colspec):
     return n
 
 
+_CM_WIDTH = re.compile(r"([LCRpmb])\{([0-9]*\.?[0-9]+)cm\}")
+
+
+def fit_colspec(colspec, available_cm=None):
+    """Scale the absolute ``cm`` column widths of ``colspec`` so that the table
+    (columns + 2 x ``\\tabcolsep`` per column + vertical rules) fits within the
+    text width from ``styles.PAGE_GEOMETRY`` (R2: tables stay inside the
+    printable area). Proportions are kept; a spec that already fits is
+    returned unchanged. The default ``\\tabcolsep`` is assumed, which is the
+    widest padding used, so locally tighter tables end up fitting as well.
+    """
+    widths = [float(m.group(2)) for m in _CM_WIDTH.finditer(colspec)]
+    if not widths:
+        return colspec
+    ncols = count_columns(colspec)
+    padding = (ncols * 2 * S._to_cm(S.TABLE["tabcolsep"])
+               + (ncols + 1) * S._to_cm(S.TABLE["rule_width"]))
+    available = (available_cm if available_cm is not None else S.text_width_cm()) - padding
+    total = sum(widths)
+    if total <= available:
+        return colspec
+    factor = available / total
+    return _CM_WIDTH.sub(
+        lambda m: f"{m.group(1)}{{{int(float(m.group(2)) * factor * 100) / 100:.2f}cm}}",
+        colspec)
+
+
 def _shade_header(header):
     """Prefix each header row with the header background colour."""
     rows = header.strip()
     return r'\rowcolor{osdagTableHeader}' + rows
+
+
+# A table row terminator: "\\" or "\\[len]" that ends a row (followed by a
+# \cline or \hline on the next line). Line breaks inside \makecell{..}
+# are never followed by a rule, so they are not matched.
+_ROW_END = re.compile(r"\\\\(\*)?(\[[^\]\n]*\])?(?=[ \t]*\r?\n[ \t]*\\(?:cline|hline))")
+_MULTIROW = re.compile(r"\\multirow\{(\d+)\}")
+
+
+def keep_row_groups_together(tex):
+    """Forbid page breaks inside every ``\\multirow{n}`` row group (R2).
+
+    A ``\\multirow{n}`` label is centred over its n rows; if ``longtable``
+    breaks the page inside the group, the label is still drawn over all n
+    rows and lands in the footer (the "G4" overlap). Ending the first n-1
+    rows of each group with ``\\\\*`` (no page break after this row) moves the
+    whole group to the next page instead. Rows after the group are untouched.
+    """
+    inserts = []
+    for m in _MULTIROW.finditer(tex):
+        n = int(m.group(1))
+        if n < 2:
+            continue
+        pos = m.end()
+        for _ in range(n - 1):
+            end = _ROW_END.search(tex, pos)
+            if end is None:
+                break
+            if not end.group(1):                  # not already "\\*"
+                inserts.append(end.start() + 2)   # right after the two backslashes
+            pos = end.end()
+    if not inserts:
+        return tex
+    out, last = [], 0
+    for at in sorted(set(inserts)):
+        out.append(tex[last:at])
+        out.append("*")
+        last = at
+    out.append(tex[last:])
+    return "".join(out)
 
 
 def longtable_begin(colspec, header, caption=None, label=None, shade=True):
@@ -166,6 +236,7 @@ def longtable_begin(colspec, header, caption=None, label=None, shade=True):
     ``header`` is the header row(s) including the row terminator(s),
     e.g. ``r"\\textbf{A} & \\textbf{B} \\\\[\\osdagRowPad]"``.
     """
+    colspec = fit_colspec(colspec)
     ncols = count_columns(colspec)
     head = _shade_header(header) if shade else header.strip()
     head_block = '\\hline\n' + head + '\n\\hline\n'

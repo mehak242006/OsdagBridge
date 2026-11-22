@@ -318,7 +318,7 @@ def _girder_tables(input_dict, n_girders):
 \vspace{\osdagMinorSkip}
 
 \vspace{\osdagCaptionSkip}
-""" + longtable_begin(r"|L{1.4cm}|p{2.2cm}|p{2.2cm}|p{3.0cm}|p{2.4cm}|p{2.2cm}|",
+""" + longtable_begin(r"|L{1.4cm}|L{2.2cm}|L{2.2cm}|L{3.0cm}|L{2.4cm}|L{2.2cm}|",
     r"\textbf{Girder} & \textbf{Torsional / Warping Restraint} & \textbf{Web Philosophy} & \textbf{Intermediate Stiffeners} & \textbf{Longitudinal Stiffeners} & \textbf{Bearing Stiffener} \\[\osdagRowPad]",
     caption=r"\textbf{Girder Restraint and Stiffener Details}") + r"""
 """
@@ -369,27 +369,25 @@ def _bracing_tables(input_dict, n_girders):
 \newpage
 
 \vspace{\osdagTightSkip}
+\begingroup
 \setlength{\tabcolsep}{\osdagColSepCompact}
 \setlength\LTleft{0pt}
 \setlength\LTright{\fill}
 
 """ + longtable_begin(r"|L{2.2cm}|L{2.2cm}|L{3.0cm}|L{2.5cm}|C{1.8cm}|C{1.8cm}|",
     r"\textbf{Location} & \textbf{Member IDs} & \textbf{Type of Bracing} & \textbf{Bracing Section} & \textbf{Spacing (m)} \\",
-    caption=r"\textbf{Member Properties: Cross Bracing Details}") + r""""""
+    caption=r"\textbf{Member Properties: Cross Bracing Details}")
 + cb_rows
 + r"""\end{longtable}
 
 \vspace{\osdagTightSkip}
 \noindent
-\setlength{\tabcolsep}{\osdagColSepCompact}
-\setlength\LTleft{0pt}
-\setlength\LTright{\fill}
-
 """ + longtable_begin(r"|L{2.2cm}|L{2.2cm}|L{3.0cm}|L{2.5cm}|C{1.8cm}|C{1.8cm}|",
     r"\textbf{Location} & \textbf{Member IDs} & \textbf{Type of Bracing} & \textbf{Bracing Section} \\",
-    caption=r"\textbf{Member Properties: End Diaphragm Details}") + r""""""
+    caption=r"\textbf{Member Properties: End Diaphragm Details}")
 + ed_rows
 + r"""\end{longtable}
+\endgroup
 """)
 
 

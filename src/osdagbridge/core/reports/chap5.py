@@ -1165,6 +1165,7 @@ This section presents all structural design checks performed by OsdagBridge. For
 
 \vspace{\osdagBlockSkip}
 
+\begingroup
 \setlength\LTleft{0pt}
 \setlength\LTright{\fill}
 
@@ -1172,6 +1173,7 @@ This section presents all structural design checks performed by OsdagBridge. For
     r"\textbf{Criterion} & \textbf{Governing Spacing} & \textbf{Actual Spacing Provided} & \textbf{Status} \\[\osdagRowPad]",
     caption=r"\textbf{Shear Connector Spacing}") + t515_content + r"""
 \end{longtable}
+\endgroup
 \noindent\textit{Note: IRC 22 Cl. 606.4, 606.9. Governing spacing $= \min(S_{L1}, S_{L2}, S_R)$.}
 
 \vspace{\osdagBlockSkip}
@@ -1346,6 +1348,7 @@ Cross bracing between adjacent plate girders provides lateral stability during c
 
 \vspace{\osdagTightSkip}
 \noindent
+\begingroup
 \setlength{\tabcolsep}{\osdagColSepCompact}
 \setlength\LTleft{0pt}
 \setlength\LTright{\fill}
@@ -1368,6 +1371,7 @@ Cross bracing between adjacent plate girders provides lateral stability during c
     r"\textbf{Panel} & \textbf{Member} & \textbf{Section} & \textbf{Governing LC} & \textbf{Demand (kN)} & \textbf{Capacity (kN)} & \textbf{UR} & \textbf{Status} \\[\osdagRowPad]",
     caption=r"\textbf{Cross Bracing Design --- Capacity Summary}") + cb_capacity_content + r"""
 \end{longtable}
+\endgroup
 \noindent\textit{Note: Designed per IS 800 Cl. 7 (compression) and Cl. 6 (tension). OsdagBridge cross-bracing module used.}
 
 % ===========================
@@ -1381,6 +1385,7 @@ End diaphragms at the supports transfer transverse loads to the bearings, restra
 
 \vspace{\osdagTightSkip}
 \noindent
+\begingroup
 \setlength{\tabcolsep}{\osdagColSepCompact}
 \setlength{\LTleft}{0pt}
 \setlength{\LTright}{\fill}
@@ -1404,6 +1409,7 @@ End diaphragms at the supports transfer transverse loads to the bearings, restra
     r"\textbf{Panel} & \textbf{Member} & \textbf{Section} & \textbf{Governing LC} & \textbf{Demand (kN)} & \textbf{Capacity (kN)} & \textbf{UR} & \textbf{Status} \\[\osdagRowPad]",
     caption=r"\textbf{End Diaphragm Design --- Capacity Summary}") + cb_capacity_content + r"""
 \end{longtable}
+\endgroup
 \noindent\textit{Note: Designed per IS 800 Cl. 7 (compression) and Cl. 6 (tension). OsdagBridge cross-bracing module used.}
 
 % ===========================

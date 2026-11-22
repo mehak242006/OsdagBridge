@@ -88,7 +88,7 @@ A grillage model was used for structural analysis. The deck is idealized as a gr
 \renewcommand{\arraystretch}{\osdagDenseArrayStretch}
 
 \begin{longtable}{|
->{\centering\arraybackslash}p{3.1cm}|
+>{\centering\arraybackslash}p{2.9cm}|
 >{\centering\arraybackslash}p{1.7cm}|
 >{\centering\arraybackslash}p{1.2cm}|
 >{\centering\arraybackslash}p{1.3cm}|
@@ -100,7 +100,7 @@ A grillage model was used for structural analysis. The deck is idealized as a gr
 
 \caption{\textbf{Summary of Maximum Demands}}\\
 \hline
-\multirow{2}{*}{\makecell{\textbf{Load}\\\textbf{Case/}\\\textbf{Comb.}}}
+\multirow{2}{*}{\makecell{\textbf{Load Case/}\\\textbf{Comb.}}}
 & \multicolumn{3}{c|}{\textbf{Bending Moment}}
 & \multicolumn{3}{c|}{\textbf{Shear Force}}
 & \multicolumn{2}{c|}{\textbf{Reaction at Supports}}\\
@@ -118,7 +118,7 @@ A grillage model was used for structural analysis. The deck is idealized as a gr
 \endfirsthead
 
 \hline
-\multirow{2}{*}{\makecell{\textbf{Load}\\\textbf{Case/}\\\textbf{Comb.}}}
+\multirow{2}{*}{\makecell{\textbf{Load Case/}\\\textbf{Comb.}}}
 & \multicolumn{3}{c|}{\textbf{Bending Moment}}
 & \multicolumn{3}{c|}{\textbf{Shear Force}}
 & \multicolumn{2}{c|}{\textbf{Reaction at Supports}}\\

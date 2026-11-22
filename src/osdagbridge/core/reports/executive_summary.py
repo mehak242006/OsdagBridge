@@ -139,12 +139,16 @@ def executive_summary(input_dict, output_dict, fig_paths) -> str:
         labels = [("", "")]
     n_cols = len(labels)
 
-    # Column widths: fixed row-label column; girder columns share the remainder
-    # of the available text width (values from styles.EXEC_GEOMETRY_TABLE).
+    # Column widths: fixed row-label column; girder columns share what is left
+    # of the text width after cell padding (2 x \tabcolsep per column), so the
+    # table stays inside the page for any number of girders.
     geo = S.EXEC_GEOMETRY_TABLE
     label_col_cm = geo["label_col_cm"]
-    girder_col_cm = round(max(geo["min_girder_col_cm"],
-                              (geo["available_width_cm"] - label_col_cm) / n_cols), 1)
+    padding_cm = ((n_cols + 1) * 2 * S._to_cm(S.TABLE["tabcolsep"])
+                  + (n_cols + 2) * S._to_cm(S.TABLE["rule_width"]))
+    girder_col_cm = max(geo["min_girder_col_cm"],
+                        (S.text_width_cm() - padding_cm - label_col_cm) / n_cols)
+    girder_col_cm = int(girder_col_cm * 10) / 10.0   # round down to 1 mm
     col_spec = '|C{' + str(label_col_cm) + 'cm}|' + '|'.join(['C{' + str(girder_col_cm) + 'cm}'] * n_cols) + '|'
 
     # Header row
