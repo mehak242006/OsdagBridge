@@ -70,6 +70,11 @@ The presentation walks through all six implemented requirements (R1–R6) using 
 
 [View Project Presentation](https://drive.google.com/file/d/1wPJUVAa4YzS8veEln3_NGrUdjuBG7FR4/view?usp=sharing)
 
+### Before-and-After Design Reports
+
+- [Report Before (PDF)](reports/Report_Before.pdf) — baseline output from the original report generator.
+- [Report After (PDF)](reports/Report_After.pdf) — final desktop export showing the report enhancements.
+
 ---
 
 ## Project Structure
