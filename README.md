@@ -64,6 +64,14 @@ These modules provide load models, combinations, material factors, and code chec
 
 ---
 
+## Project Walkthrough
+
+The presentation walks through all six implemented requirements (R1–R6) using before-and-after report screenshots. It explains the report generator architecture, highlights the utilization-ratio and material-quantity charts, and summarizes the testing and verification results.
+
+[View Project Presentation](https://drive.google.com/file/d/1wPJUVAa4YzS8veEln3_NGrUdjuBG7FR4/view?usp=sharing)
+
+---
+
 ## Project Structure
 
 ```
